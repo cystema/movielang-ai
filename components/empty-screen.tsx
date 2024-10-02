@@ -26,7 +26,7 @@ export function EmptyScreen() {
           .
         </p>
         <p className="leading-normal text-muted-foreground">
-          It leverages AstraDB’s Vector Database to store and retrieve movie data from the TMDB API, using advanced vector search to identify the most relevant movies based on user input. By combining Vector Search with Retrieval-Augmented Generation (RAG) and a Large Language Model (LLM), the chatbot generates intelligent, context-aware responses for an enhanced user experience.
+          It leverages AstraDB’s Vector Database to store movie data from TMDB, using advanced vector search to identify the most relevant movies based on user input. By combining Vector Search with Retrieval-Augmented Generation (RAG) and an LLM, the chatbot generates intelligent, context-aware responses. Currently, the movie data is between 2021 and 2024.
         </p>
       </div>
     </div>

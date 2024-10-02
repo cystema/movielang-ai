@@ -36,8 +36,8 @@ export function ChatPanel({
 
   const exampleMessages = [
     {
-      heading: 'What are some',
-      subheading: 'movies on Netflix with strong female leads?',
+      heading: 'What are some movies on Netflix',
+      subheading: 'with strong female leads?',
       message: `What are some movies on Netflix with strong female leads?`
     },
     {
