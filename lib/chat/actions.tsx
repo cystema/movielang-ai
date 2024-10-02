@@ -103,11 +103,11 @@ async function submitUserMessage(content: string) {
         }),
         generate: async function* ({ query }) {
           console.log("Looking for movies", { query });
-          yield (
-            <div className="flex items-center gap-4">
-              <IntegrationSpinner /> Asking Langflow...
-            </div>
-          );
+          // yield (
+          //   <div className="flex items-center gap-4">
+          //     <IntegrationSpinner /> Asking Langflow...
+          //   </div>
+          // );
           const langflowurl = process.env.LANGFLOW_URL;
           const langflowtoken = process.env.LANGFLOW_APPLICATION_TOKEN;
           console.log(" Langflow URL: ", { langflowurl });
@@ -125,11 +125,10 @@ async function submitUserMessage(content: string) {
               }),
             }
           ).then((r) => r.json())
-            // .then((d) => console.log(d));
             .then((d) => {
-              // console.log(JSON.stringify(d));
+              console.log(JSON.stringify(d));
               return d.outputs[0].outputs[0].results.message.text
-            });
+            }).catch((e) => console.log("Error in Fetch", e));
           const toolCallId = nanoid()
           // lastLangflowResponse = movies;
           history.done({
