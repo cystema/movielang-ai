@@ -37,8 +37,8 @@ export function ChatPanel({
   const exampleMessages = [
     {
       heading: 'What are some',
-      subheading: 'popular Netflix movies?',
-      message: `What are some popular Netflix movies?`
+      subheading: 'movies on Netflix with strong female leads?',
+      message: `What are some movies on Netflix with strong female leads?`
     },
     {
       heading: 'What is ',
@@ -47,13 +47,13 @@ export function ChatPanel({
     },
     {
       heading: 'Give me some recommendations',
-      subheading: 'of action movies from Amazon Prime',
-      message: `Give me some recommendations of action movies from Amazon Prime`
+      subheading: 'of action movies which are about veterans.',
+      message: `Give me some recommendations of action movies which are about veterans`
     },
     {
-      heading: 'Find me some monster movies',
-      subheading: `from 2024`,
-      message: `Find me some monster movies from 2024`
+      heading: 'Find me some ',
+      subheading: `monster movies`,
+      message: `Find me some monster movies`
     }
   ]
 

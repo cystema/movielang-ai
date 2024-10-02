@@ -16,8 +16,10 @@ import {
   BotMessage,
   SystemMessage,
   Stock,
-  Purchase
+  Purchase,
 } from '@/components/stocks'
+
+import { IntegrationSpinner } from '@/components/IntegrationSpinner'
 
 import { z } from 'zod'
 import { EventsSkeleton } from '@/components/stocks/events-skeleton'
@@ -103,7 +105,7 @@ async function submitUserMessage(content: string) {
           console.log("Looking for movies", { query });
           yield (
             <div className="flex items-center gap-4">
-              Asking Langflow...
+              <IntegrationSpinner /> Asking Langflow...
             </div>
           );
           const langflowurl = process.env.LANGFLOW_URL;
