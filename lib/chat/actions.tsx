@@ -112,23 +112,40 @@ async function submitUserMessage(content: string) {
           const langflowtoken = process.env.LANGFLOW_APPLICATION_TOKEN;
           console.log(" Langflow URL: ", { langflowurl });
           console.log("Langflow token: ", { langflowtoken })
-          const movies = await fetch(
-            process.env.LANGFLOW_URL!,
-            {
-              method: "post",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${process.env.LANGFLOW_APPLICATION_TOKEN}`,
-              },
-              body: JSON.stringify({
-                input_value: query,
-              }),
-            }
-          ).then((r) => r.json())
-            .then((d) => {
-              console.log(JSON.stringify(d));
-              return d.outputs[0].outputs[0].results.message.text
-            }).catch((e) => console.log("Error in Fetch", e));
+          const movies = await fetch(process.env.LANGFLOW_URL!, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${process.env.LANGFLOW_APPLICATION_TOKEN}`,
+            },
+            body: JSON.stringify({
+              input_value: query,
+            }),
+          })
+            .then((response) => {
+              // Check if the response is OK (status 200-299)
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json(); // Parse the response as JSON
+            })
+            .then((data) => {
+              // Use optional chaining to safely access nested properties
+              const movieText = data?.outputs?.[0]?.outputs?.[0]?.results?.message?.text;
+
+              if (!movieText) {
+                throw new Error('Invalid response format: Missing movie text');
+              }
+
+              console.log('Movies:', movieText);
+              return movieText; // Return the extracted movie text
+            })
+            .catch((error) => {
+              // Log any errors that occurred during the fetch or parsing
+              console.error('Error fetching movies:', error);
+              return null; // Return null in case of an error
+            });
+
           const toolCallId = nanoid()
           // lastLangflowResponse = movies;
           history.done({
@@ -171,304 +188,304 @@ async function submitUserMessage(content: string) {
           )
         },
       },
-      listStocks: {
-        description: 'List three imaginary stocks that are trending.',
-        parameters: z.object({
-          stocks: z.array(
-            z.object({
-              symbol: z.string().describe('The symbol of the stock'),
-              price: z.number().describe('The price of the stock'),
-              delta: z.number().describe('The change in price of the stock')
-            })
-          )
-        }),
-        generate: async function* ({ stocks }) {
-          yield (
-            <BotCard>
-              <StocksSkeleton />
-            </BotCard>
-          )
+      // listStocks: {
+      //   description: 'List three imaginary stocks that are trending.',
+      //   parameters: z.object({
+      //     stocks: z.array(
+      //       z.object({
+      //         symbol: z.string().describe('The symbol of the stock'),
+      //         price: z.number().describe('The price of the stock'),
+      //         delta: z.number().describe('The change in price of the stock')
+      //       })
+      //     )
+      //   }),
+      //   generate: async function* ({ stocks }) {
+      //     yield (
+      //       <BotCard>
+      //         <StocksSkeleton />
+      //       </BotCard>
+      //     )
 
-          await sleep(1000)
+      //     await sleep(1000)
 
-          const toolCallId = nanoid()
+      //     const toolCallId = nanoid()
 
-          history.done({
-            ...history.get(),
-            messages: [
-              ...history.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'listStocks',
-                    toolCallId,
-                    args: { stocks }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'listStocks',
-                    toolCallId,
-                    result: stocks
-                  }
-                ]
-              }
-            ]
-          })
+      //     history.done({
+      //       ...history.get(),
+      //       messages: [
+      //         ...history.get().messages,
+      //         {
+      //           id: nanoid(),
+      //           role: 'assistant',
+      //           content: [
+      //             {
+      //               type: 'tool-call',
+      //               toolName: 'listStocks',
+      //               toolCallId,
+      //               args: { stocks }
+      //             }
+      //           ]
+      //         },
+      //         {
+      //           id: nanoid(),
+      //           role: 'tool',
+      //           content: [
+      //             {
+      //               type: 'tool-result',
+      //               toolName: 'listStocks',
+      //               toolCallId,
+      //               result: stocks
+      //             }
+      //           ]
+      //         }
+      //       ]
+      //     })
 
-          return (
-            <BotCard>
-              <Stocks props={stocks} />
-            </BotCard>
-          )
-        }
-      },
-      showStockPrice: {
-        description:
-          'Get the current stock price of a given stock or currency. Use this to show the price to the user.',
-        parameters: z.object({
-          symbol: z
-            .string()
-            .describe(
-              'The name or symbol of the stock or currency. e.g. DOGE/AAPL/USD.'
-            ),
-          price: z.number().describe('The price of the stock.'),
-          delta: z.number().describe('The change in price of the stock')
-        }),
-        generate: async function* ({ symbol, price, delta }) {
-          yield (
-            <BotCard>
-              <StockSkeleton />
-            </BotCard>
-          )
+      //     return (
+      //       <BotCard>
+      //         <Stocks props={stocks} />
+      //       </BotCard>
+      //     )
+      //   }
+      // },
+      // showStockPrice: {
+      //   description:
+      //     'Get the current stock price of a given stock or currency. Use this to show the price to the user.',
+      //   parameters: z.object({
+      //     symbol: z
+      //       .string()
+      //       .describe(
+      //         'The name or symbol of the stock or currency. e.g. DOGE/AAPL/USD.'
+      //       ),
+      //     price: z.number().describe('The price of the stock.'),
+      //     delta: z.number().describe('The change in price of the stock')
+      //   }),
+      //   generate: async function* ({ symbol, price, delta }) {
+      //     yield (
+      //       <BotCard>
+      //         <StockSkeleton />
+      //       </BotCard>
+      //     )
 
-          await sleep(1000)
+      //     await sleep(1000)
 
-          const toolCallId = nanoid()
+      //     const toolCallId = nanoid()
 
-          history.done({
-            ...history.get(),
-            messages: [
-              ...history.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'showStockPrice',
-                    toolCallId,
-                    args: { symbol, price, delta }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'showStockPrice',
-                    toolCallId,
-                    result: { symbol, price, delta }
-                  }
-                ]
-              }
-            ]
-          })
+      //     history.done({
+      //       ...history.get(),
+      //       messages: [
+      //         ...history.get().messages,
+      //         {
+      //           id: nanoid(),
+      //           role: 'assistant',
+      //           content: [
+      //             {
+      //               type: 'tool-call',
+      //               toolName: 'showStockPrice',
+      //               toolCallId,
+      //               args: { symbol, price, delta }
+      //             }
+      //           ]
+      //         },
+      //         {
+      //           id: nanoid(),
+      //           role: 'tool',
+      //           content: [
+      //             {
+      //               type: 'tool-result',
+      //               toolName: 'showStockPrice',
+      //               toolCallId,
+      //               result: { symbol, price, delta }
+      //             }
+      //           ]
+      //         }
+      //       ]
+      //     })
 
-          return (
-            <BotCard>
-              <Stock props={{ symbol, price, delta }} />
-            </BotCard>
-          )
-        }
-      },
-      showStockPurchase: {
-        description:
-          'Show price and the UI to purchase a stock or currency. Use this if the user wants to purchase a stock or currency.',
-        parameters: z.object({
-          symbol: z
-            .string()
-            .describe(
-              'The name or symbol of the stock or currency. e.g. DOGE/AAPL/USD.'
-            ),
-          price: z.number().describe('The price of the stock.'),
-          numberOfShares: z
-            .number()
-            .optional()
-            .describe(
-              'The **number of shares** for a stock or currency to purchase. Can be optional if the user did not specify it.'
-            )
-        }),
-        generate: async function* ({ symbol, price, numberOfShares = 100 }) {
-          const toolCallId = nanoid()
+      //     return (
+      //       <BotCard>
+      //         <Stock props={{ symbol, price, delta }} />
+      //       </BotCard>
+      //     )
+      //   }
+      // },
+      // showStockPurchase: {
+      //   description:
+      //     'Show price and the UI to purchase a stock or currency. Use this if the user wants to purchase a stock or currency.',
+      //   parameters: z.object({
+      //     symbol: z
+      //       .string()
+      //       .describe(
+      //         'The name or symbol of the stock or currency. e.g. DOGE/AAPL/USD.'
+      //       ),
+      //     price: z.number().describe('The price of the stock.'),
+      //     numberOfShares: z
+      //       .number()
+      //       .optional()
+      //       .describe(
+      //         'The **number of shares** for a stock or currency to purchase. Can be optional if the user did not specify it.'
+      //       )
+      //   }),
+      //   generate: async function* ({ symbol, price, numberOfShares = 100 }) {
+      //     const toolCallId = nanoid()
 
-          if (numberOfShares <= 0 || numberOfShares > 1000) {
-            history.done({
-              ...history.get(),
-              messages: [
-                ...history.get().messages,
-                {
-                  id: nanoid(),
-                  role: 'assistant',
-                  content: [
-                    {
-                      type: 'tool-call',
-                      toolName: 'showStockPurchase',
-                      toolCallId,
-                      args: { symbol, price, numberOfShares }
-                    }
-                  ]
-                },
-                {
-                  id: nanoid(),
-                  role: 'tool',
-                  content: [
-                    {
-                      type: 'tool-result',
-                      toolName: 'showStockPurchase',
-                      toolCallId,
-                      result: {
-                        symbol,
-                        price,
-                        numberOfShares,
-                        status: 'expired'
-                      }
-                    }
-                  ]
-                },
-                {
-                  id: nanoid(),
-                  role: 'system',
-                  content: `[User has selected an invalid amount]`
-                }
-              ]
-            })
+      //     if (numberOfShares <= 0 || numberOfShares > 1000) {
+      //       history.done({
+      //         ...history.get(),
+      //         messages: [
+      //           ...history.get().messages,
+      //           {
+      //             id: nanoid(),
+      //             role: 'assistant',
+      //             content: [
+      //               {
+      //                 type: 'tool-call',
+      //                 toolName: 'showStockPurchase',
+      //                 toolCallId,
+      //                 args: { symbol, price, numberOfShares }
+      //               }
+      //             ]
+      //           },
+      //           {
+      //             id: nanoid(),
+      //             role: 'tool',
+      //             content: [
+      //               {
+      //                 type: 'tool-result',
+      //                 toolName: 'showStockPurchase',
+      //                 toolCallId,
+      //                 result: {
+      //                   symbol,
+      //                   price,
+      //                   numberOfShares,
+      //                   status: 'expired'
+      //                 }
+      //               }
+      //             ]
+      //           },
+      //           {
+      //             id: nanoid(),
+      //             role: 'system',
+      //             content: `[User has selected an invalid amount]`
+      //           }
+      //         ]
+      //       })
 
-            return <BotMessage content={'Invalid amount'} />
-          } else {
-            history.done({
-              ...history.get(),
-              messages: [
-                ...history.get().messages,
-                {
-                  id: nanoid(),
-                  role: 'assistant',
-                  content: [
-                    {
-                      type: 'tool-call',
-                      toolName: 'showStockPurchase',
-                      toolCallId,
-                      args: { symbol, price, numberOfShares }
-                    }
-                  ]
-                },
-                {
-                  id: nanoid(),
-                  role: 'tool',
-                  content: [
-                    {
-                      type: 'tool-result',
-                      toolName: 'showStockPurchase',
-                      toolCallId,
-                      result: {
-                        symbol,
-                        price,
-                        numberOfShares
-                      }
-                    }
-                  ]
-                }
-              ]
-            })
+      //       return <BotMessage content={'Invalid amount'} />
+      //     } else {
+      //       history.done({
+      //         ...history.get(),
+      //         messages: [
+      //           ...history.get().messages,
+      //           {
+      //             id: nanoid(),
+      //             role: 'assistant',
+      //             content: [
+      //               {
+      //                 type: 'tool-call',
+      //                 toolName: 'showStockPurchase',
+      //                 toolCallId,
+      //                 args: { symbol, price, numberOfShares }
+      //               }
+      //             ]
+      //           },
+      //           {
+      //             id: nanoid(),
+      //             role: 'tool',
+      //             content: [
+      //               {
+      //                 type: 'tool-result',
+      //                 toolName: 'showStockPurchase',
+      //                 toolCallId,
+      //                 result: {
+      //                   symbol,
+      //                   price,
+      //                   numberOfShares
+      //                 }
+      //               }
+      //             ]
+      //           }
+      //         ]
+      //       })
 
-            return (
-              <BotCard>
-                <Purchase
-                  props={{
-                    numberOfShares,
-                    symbol,
-                    price: +price,
-                    status: 'requires_action'
-                  }}
-                />
-              </BotCard>
-            )
-          }
-        }
-      },
-      getEvents: {
-        description:
-          'List funny imaginary events between user highlighted dates that describe stock activity.',
-        parameters: z.object({
-          events: z.array(
-            z.object({
-              date: z
-                .string()
-                .describe('The date of the event, in ISO-8601 format'),
-              headline: z.string().describe('The headline of the event'),
-              description: z.string().describe('The description of the event')
-            })
-          )
-        }),
-        generate: async function* ({ events }) {
-          yield (
-            <BotCard>
-              <EventsSkeleton />
-            </BotCard>
-          )
+      //       return (
+      //         <BotCard>
+      //           <Purchase
+      //             props={{
+      //               numberOfShares,
+      //               symbol,
+      //               price: +price,
+      //               status: 'requires_action'
+      //             }}
+      //           />
+      //         </BotCard>
+      //       )
+      //     }
+      //   }
+      // },
+      // getEvents: {
+      //   description:
+      //     'List funny imaginary events between user highlighted dates that describe stock activity.',
+      //   parameters: z.object({
+      //     events: z.array(
+      //       z.object({
+      //         date: z
+      //           .string()
+      //           .describe('The date of the event, in ISO-8601 format'),
+      //         headline: z.string().describe('The headline of the event'),
+      //         description: z.string().describe('The description of the event')
+      //       })
+      //     )
+      //   }),
+      //   generate: async function* ({ events }) {
+      //     yield (
+      //       <BotCard>
+      //         <EventsSkeleton />
+      //       </BotCard>
+      //     )
 
-          await sleep(1000)
+      //     await sleep(1000)
 
-          const toolCallId = nanoid()
+      //     const toolCallId = nanoid()
 
-          history.done({
-            ...history.get(),
-            messages: [
-              ...history.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'getEvents',
-                    toolCallId,
-                    args: { events }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'getEvents',
-                    toolCallId,
-                    result: events
-                  }
-                ]
-              }
-            ]
-          })
+      //     history.done({
+      //       ...history.get(),
+      //       messages: [
+      //         ...history.get().messages,
+      //         {
+      //           id: nanoid(),
+      //           role: 'assistant',
+      //           content: [
+      //             {
+      //               type: 'tool-call',
+      //               toolName: 'getEvents',
+      //               toolCallId,
+      //               args: { events }
+      //             }
+      //           ]
+      //         },
+      //         {
+      //           id: nanoid(),
+      //           role: 'tool',
+      //           content: [
+      //             {
+      //               type: 'tool-result',
+      //               toolName: 'getEvents',
+      //               toolCallId,
+      //               result: events
+      //             }
+      //           ]
+      //         }
+      //       ]
+      //     })
 
-          return (
-            <BotCard>
-              <Events props={events} />
-            </BotCard>
-          )
-        }
-      }
+      //     return (
+      //       <BotCard>
+      //         <Events props={events} />
+      //       </BotCard>
+      //     )
+      //   }
+      // }
     }
   })
 
@@ -548,7 +565,13 @@ export const getUIStateFromAIState = (aiState: Chat) => {
       display:
         message.role === 'tool' ? (
           message.content.map(tool => {
-            return tool.toolName === 'listStocks' ? (
+            return tool.toolName === 'getMovies' ? (
+              <BotCard>
+                {/* TODO: Infer types based on the tool result*/}
+                {/* @ts-expect-error */}
+                <Markdown></Markdown>
+              </BotCard>
+            ) : tool.toolName === 'listStocks' ? (
               <BotCard>
                 {/* TODO: Infer types based on the tool result*/}
                 {/* @ts-expect-error */}
