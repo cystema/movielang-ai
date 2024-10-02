@@ -35,86 +35,17 @@ import { saveChat } from '@/app/actions'
 import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
 import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
-
-async function confirmPurchase(symbol: string, price: number, amount: number) {
-  'use server'
-
-  const aiState = getMutableAIState<typeof AI>()
-
-  const purchasing = createStreamableUI(
-    <div className="inline-flex items-start gap-1 md:items-center">
-      {spinner}
-      <p className="mb-2">
-        Purchasing {amount} ${symbol}...
-      </p>
-    </div>
-  )
-
-  const systemMessage = createStreamableUI(null)
-
-  runAsyncFnWithoutBlocking(async () => {
-    await sleep(1000)
-
-    purchasing.update(
-      <div className="inline-flex items-start gap-1 md:items-center">
-        {spinner}
-        <p className="mb-2">
-          Purchasing {amount} ${symbol}... working on it...
-        </p>
-      </div>
-    )
-
-    await sleep(1000)
-
-    purchasing.done(
-      <div>
-        <p className="mb-2">
-          You have successfully purchased {amount} ${symbol}. Total cost:{' '}
-          {formatNumber(amount * price)}
-        </p>
-      </div>
-    )
-
-    systemMessage.done(
-      <SystemMessage>
-        You have purchased {amount} shares of {symbol} at ${price}. Total cost ={' '}
-        {formatNumber(amount * price)}.
-      </SystemMessage>
-    )
-
-    aiState.done({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'system',
-          content: `[User has purchased ${amount} shares of ${symbol} at ${price}. Total cost = ${
-            amount * price
-          }]`
-        }
-      ]
-    })
-  })
-
-  return {
-    purchasingUI: purchasing.value,
-    newMessage: {
-      id: nanoid(),
-      display: systemMessage.value
-    }
-  }
-}
+import { Markdown } from '@/components/stocks/Markdown'
 
 async function submitUserMessage(content: string) {
   'use server'
 
-  const aiState = getMutableAIState<typeof AI>()
+  const history = getMutableAIState<typeof AI>()
 
-  aiState.update({
-    ...aiState.get(),
+  history.update({
+    ...history.get(),
     messages: [
-      ...aiState.get().messages,
+      ...history.get().messages,
       {
         id: nanoid(),
         role: 'user',
@@ -129,23 +60,8 @@ async function submitUserMessage(content: string) {
   const result = await streamUI({
     model: openai('gpt-3.5-turbo'),
     initial: <SpinnerMessage />,
-    system: `\
-    You are a stock trading conversation bot and you can help users buy stocks, step by step.
-    You and the user can discuss stock prices and the user can adjust the amount of stocks they want to buy, or place an order, in the UI.
-
-    Messages inside [] means that it's a UI element or a user event. For example:
-    - "[Price of AAPL = 100]" means that an interface of the stock price of AAPL is shown to the user.
-    - "[User has changed the amount of AAPL to 10]" means that the user has changed the amount of AAPL to 10 in the UI.
-
-    If the user requests purchasing a stock, call \`show_stock_purchase_ui\` to show the purchase UI.
-    If the user just wants the price, call \`show_stock_price\` to show the price.
-    If you want to show trending stocks, call \`list_stocks\`.
-    If you want to show events, call \`get_events\`.
-    If the user wants to sell stock, or complete another impossible task, respond that you are a demo and cannot do that.
-
-    Besides that, you can also chat with users and do some calculations if needed.`,
     messages: [
-      ...aiState.get().messages.map((message: any) => ({
+      ...history.get().messages.map((message: any) => ({
         role: message.role,
         content: message.content,
         name: message.name
@@ -159,10 +75,10 @@ async function submitUserMessage(content: string) {
 
       if (done) {
         textStream.done()
-        aiState.done({
-          ...aiState.get(),
+        history.done({
+          ...history.get(),
           messages: [
-            ...aiState.get().messages,
+            ...history.get().messages,
             {
               id: nanoid(),
               role: 'assistant',
@@ -177,6 +93,83 @@ async function submitUserMessage(content: string) {
       return textNode
     },
     tools: {
+      getMovies: {
+        description:
+          "A tool used to get a list of movies matching a user's query",
+        parameters: z.object({
+          query: z.string(),
+        }),
+        generate: async function* ({ query }) {
+          console.log("Looking for movies", { query });
+          yield (
+            <div className="flex items-center gap-4">
+              Asking Langflow...
+            </div>
+          );
+          const langflowurl = process.env.LANGFLOW_URL;
+          const langflowtoken = process.env.LANGFLOW_APPLICATION_TOKEN;
+          // console.log(" Langflow URL: ", { langflowurl });
+          // console.log("Langflow token: ", { langflowtoken })
+          const movies = await fetch(
+            process.env.LANGFLOW_URL!,
+            {
+              method: "post",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${process.env.LANGFLOW_APPLICATION_TOKEN}`,
+              },
+              body: JSON.stringify({
+                input_value: query,
+              }),
+            }
+          ).then((r) => r.json())
+            // .then((d) => console.log(d));
+            .then((d) => {
+              console.log(JSON.stringify(d));
+              return d.outputs[0].outputs[0].results.message.text
+            });
+          const toolCallId = nanoid()
+          // lastLangflowResponse = movies;
+          history.done({
+            ...history.get(),
+            messages: [
+              ...history.get().messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: [
+                  {
+                    type: 'tool-call',
+                    toolName: 'getMovies',
+                    toolCallId,
+                    args: { query, }
+                  }
+                ]
+              },
+              {
+                id: nanoid(),
+                role: 'tool',
+                content: [
+                  {
+                    type: 'tool-result',
+                    toolName: 'getMovies',
+                    toolCallId,
+                    result: { movies }
+                  }
+                ]
+              }
+            ]
+          })
+          console.log(movies)
+
+          // return <Markdown>{movies}</Markdown>;
+          return (
+            <BotCard>
+              <Markdown>{movies}</Markdown>
+            </BotCard>
+          )
+        },
+      },
       listStocks: {
         description: 'List three imaginary stocks that are trending.',
         parameters: z.object({
@@ -199,10 +192,10 @@ async function submitUserMessage(content: string) {
 
           const toolCallId = nanoid()
 
-          aiState.done({
-            ...aiState.get(),
+          history.done({
+            ...history.get(),
             messages: [
-              ...aiState.get().messages,
+              ...history.get().messages,
               {
                 id: nanoid(),
                 role: 'assistant',
@@ -260,10 +253,10 @@ async function submitUserMessage(content: string) {
 
           const toolCallId = nanoid()
 
-          aiState.done({
-            ...aiState.get(),
+          history.done({
+            ...history.get(),
             messages: [
-              ...aiState.get().messages,
+              ...history.get().messages,
               {
                 id: nanoid(),
                 role: 'assistant',
@@ -319,10 +312,10 @@ async function submitUserMessage(content: string) {
           const toolCallId = nanoid()
 
           if (numberOfShares <= 0 || numberOfShares > 1000) {
-            aiState.done({
-              ...aiState.get(),
+            history.done({
+              ...history.get(),
               messages: [
-                ...aiState.get().messages,
+                ...history.get().messages,
                 {
                   id: nanoid(),
                   role: 'assistant',
@@ -362,10 +355,10 @@ async function submitUserMessage(content: string) {
 
             return <BotMessage content={'Invalid amount'} />
           } else {
-            aiState.done({
-              ...aiState.get(),
+            history.done({
+              ...history.get(),
               messages: [
-                ...aiState.get().messages,
+                ...history.get().messages,
                 {
                   id: nanoid(),
                   role: 'assistant',
@@ -437,10 +430,10 @@ async function submitUserMessage(content: string) {
 
           const toolCallId = nanoid()
 
-          aiState.done({
-            ...aiState.get(),
+          history.done({
+            ...history.get(),
             messages: [
-              ...aiState.get().messages,
+              ...history.get().messages,
               {
                 id: nanoid(),
                 role: 'assistant',
@@ -496,8 +489,7 @@ export type UIState = {
 
 export const AI = createAI<AIState, UIState>({
   actions: {
-    submitUserMessage,
-    confirmPurchase
+    submitUserMessage
   },
   initialUIState: [],
   initialAIState: { chatId: nanoid(), messages: [] },
