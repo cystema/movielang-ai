@@ -1,6 +1,6 @@
 # MovieLang 🎬
 
-This project is a movie recommendation system built using AstraDB, LangChain, Langflow, Langsmith, Vercel AI SDK, and Next.js, with data sourced from the TMDB API. The system processes user queries and provides personalized movie recommendations in a structured JSON format.
+This project is a movie recommendation system built using AstraDB, LangChain, Langflow, Langsmith, Vercel AI SDK, and Next.js, with data sourced from the TMDB API. The system processes user queries and provides personalized movie recommendations.
 
 **Try it out here**: [MovieLang](https://movielang.shubh.ink/)
 
