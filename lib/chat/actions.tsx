@@ -110,8 +110,8 @@ async function submitUserMessage(content: string) {
           );
           const langflowurl = process.env.LANGFLOW_URL;
           const langflowtoken = process.env.LANGFLOW_APPLICATION_TOKEN;
-          // console.log(" Langflow URL: ", { langflowurl });
-          // console.log("Langflow token: ", { langflowtoken })
+          console.log(" Langflow URL: ", { langflowurl });
+          console.log("Langflow token: ", { langflowtoken })
           const movies = await fetch(
             process.env.LANGFLOW_URL!,
             {
@@ -127,7 +127,7 @@ async function submitUserMessage(content: string) {
           ).then((r) => r.json())
             // .then((d) => console.log(d));
             .then((d) => {
-              console.log(JSON.stringify(d));
+              // console.log(JSON.stringify(d));
               return d.outputs[0].outputs[0].results.message.text
             });
           const toolCallId = nanoid()
